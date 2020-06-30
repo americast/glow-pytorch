@@ -13,7 +13,8 @@ from docopt import docopt
 from torchvision import transforms
 from glow.builder import build
 from glow.config import JsonConfig
-
+from glow.utils import load
+import pudb
 
 def select_index(name, l, r, description=None):
     index = None
@@ -36,7 +37,7 @@ def select_index(name, l, r, description=None):
 
 def run_z(graph, z):
     graph.eval()
-    x = graph(z=torch.tensor([z]).cuda(), eps_std=0.3, reverse=True)
+    x = graph(z=torch.tensor([z]), eps_std=0.3, reverse=True)
     img = x[0].permute(1, 2, 0).detach().cpu().numpy()
     img = img[:, :, ::-1]
     img = cv2.resize(img, (256, 256))
@@ -49,8 +50,9 @@ def save_images(images, names):
     for img, name in zip(images, names):
         img = (np.clip(img, 0, 1) * 255).astype(np.uint8)
         cv2.imwrite("pictures/infer/{}.png".format(name), img)
-        cv2.imshow("img", img)
-        cv2.waitKey()
+        # cv2.imshow("img", img)
+        # cv2.waitKey()
+        print("Saved as pictures/infer/{}.png".format(name))
 
 
 if __name__ == "__main__":
@@ -78,7 +80,9 @@ if __name__ == "__main__":
         transforms.Resize(hparams.Data.resize),
         transforms.ToTensor()])
     # build
-    graph = build(hparams, False)["graph"]
+    built = build(hparams, True)
+    load('trained.pkg', built['graph'], device=torch.device('cpu'))
+    graph = built['graph']
     dataset = dataset(dataset_root, transform=transform)
 
     # get Z

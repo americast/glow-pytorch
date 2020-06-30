@@ -257,7 +257,7 @@ class Glow(nn.Module):
     def generate_z(self, img):
         self.eval()
         B = self.hparams.Train.batch_size
-        x = img.unsqueeze(0).repeat(B, 1, 1, 1).cuda()
+        x = img.unsqueeze(0).repeat(B, 1, 1, 1)
         z,_, _ = self(x)
         self.train()
         return z[0].detach().cpu().numpy()
@@ -276,7 +276,7 @@ class Glow(nn.Module):
                 xs = [dataset[k]["x"] for k in range(i, j)]
                 while len(xs) < B:
                     xs.append(dataset[0]["x"])
-                xs = torch.stack(xs).cuda()
+                xs = torch.stack(xs)
                 zs, _, _ = self(xs)
                 for k in range(i, j):
                     z = zs[k - i].detach().cpu().numpy()
