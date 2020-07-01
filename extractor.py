@@ -1,7 +1,7 @@
 """Train script.
 
 Usage:
-    infer_celeba.py <hparams> <dataset_root>
+    extractor.py <hparams> <dataset_root> <Attrs> <NoAttrs>
 """
 import os
 import cv2
@@ -15,6 +15,7 @@ from glow.builder import build
 from glow.config import JsonConfig
 from glow.utils import load
 import pudb
+from tqdm import tqdm
 
 def select_index(name, l, r, description=None):
     index = None
@@ -60,6 +61,8 @@ if __name__ == "__main__":
     hparams = args["<hparams>"]
     hparams = JsonConfig(hparams)
     dataset_root = args["<dataset_root>"]
+    Needs = args["<Attrs>"]
+    NoNeeds = args["<NoAttrs>"]
     dataset = vision.Datasets["celeba"]
     # set transform of dataset
     transform = transforms.Compose([
@@ -70,18 +73,33 @@ if __name__ == "__main__":
     dataset = dataset(dataset_root, transform=transform)
     # interact with user
     # pu.db
-    Needs = ["Male", "Smiling"]
+    Needs = [x.strip() for x in Needs.split(" ")]
+    NoNeeds = [x.strip() for x in NoNeeds.split(" ")]
+    if Needs == [""]:
+        Needs = []
+    if NoNeeds == [""]:
+        NoNeeds = []
     indices = []
+    noindices = []
     for need in Needs:
         indices.append(dataset.attrs.index(need))
 
-    f = open("pic_list/"+str(Needs), "w")
-    for data in dataset.data:
+    for noneed in NoNeeds:
+        noindices.append(dataset.attrs.index(noneed))
+
+    f = open("pic_list/"+str(Needs)+"~"+str(NoNeeds), "w")
+    for data in tqdm(dataset.data):
         choose = True
 
         for index in indices:
             if data["attr"][index] != 1:
                 choose = False
+
+        for noindex in noindices:
+            if data["attr"][noindex] == 1:
+                choose = False
+
+
 
         if choose:
             f.write(data["path"]+"\n")
