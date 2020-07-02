@@ -105,127 +105,132 @@ if __name__ == "__main__":
         print("Finish generating")
 
 
-
-    # Smiling Man
-
-
-    base_indices_smiling_male = get_base_indices("['Smiling', 'Male']~[]")
+    for gen in tqdm(range(10)):
+        # Smiling Man
 
 
-    indices_here_smiling_male = get_n_indices(base_indices_smiling_male, 3)
+        base_indices_smiling_male = get_base_indices("['Smiling', 'Male']~[]")
 
 
-
-    z_base_male_smiling = []
-    imgs_male_smiling = []
-    for index in tqdm(indices_here_smiling_male):
-        z_base_male_smiling.append(graph.generate_z(dataset[index]["x"]))
-        img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
-        img = img[:, :, ::-1]
-        img = cv2.resize(img, (64, 64))
-        imgs_male_smiling.append(img)
-
-
-    z_base_male_smiling = sum(z_base_male_smiling)/3
-
-    images_male_smiling = []
-    names = []
-    images_male_smiling.append(run_z(graph, z_base_male_smiling))
-    names.append("male_smiling_avg")
-    
-    save_images(images_male_smiling, names)
-    
-
-    # Smiling Woman
-
-    base_indices_smiling_female = get_base_indices("['Smiling']~['Male']")
-
-
-    indices_here_smiling_female = get_n_indices(base_indices_smiling_female, 3)
+        indices_here_smiling_male = get_n_indices(base_indices_smiling_male, 3)
 
 
 
-    z_base_female_smiling = []
-    imgs_female_smiling = []
-    for index in tqdm(indices_here_smiling_female):
-        z_base_female_smiling.append(graph.generate_z(dataset[index]["x"]))
-        img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
-        img = img[:, :, ::-1]
-        img = cv2.resize(img, (64, 64))
-        imgs_female_smiling.append(img)
+        z_base_male_smiling = []
+        imgs_male_smiling = []
+        for index in indices_here_smiling_male:
+            z_base_male_smiling.append(graph.generate_z(dataset[index]["x"]))
+            img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
+            img = img[:, :, ::-1]
+            img = cv2.resize(img, (64, 64))
+            imgs_male_smiling.append(img)
 
 
-    z_base_female_smiling = sum(z_base_female_smiling)/3
+        z_base_male_smiling = sum(z_base_male_smiling)/3
 
-    images_female_smiling = []
-    names = []
-    images_female_smiling.append(run_z(graph, z_base_female_smiling))
-    names.append("female_smiling_avg")
-    
-    save_images(images_female_smiling, names)
+        images_male_smiling = []
+        names = []
+        images_male_smiling.append(run_z(graph, z_base_male_smiling))
+        os.system("mkdir -p pictures/smile/"+str(gen))
+        names.append(str(gen)+"/male_smiling_avg")
+        
+        save_images(images_male_smiling, names)
+        
 
-    # Neutral Man
+        # Smiling Woman
 
-    base_indices_neutral_male = get_base_indices("['Male']~['Smiling']")
-
-
-    indices_here_neutral_male = get_n_indices(base_indices_neutral_male, 3)
-
+        base_indices_smiling_female = get_base_indices("['Smiling']~['Male']")
 
 
-    z_base_male_neutral = []
-    imgs_male_neutral = []
-    for index in tqdm(indices_here_neutral_male):
-        z_base_male_neutral.append(graph.generate_z(dataset[index]["x"]))
-        img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
-        img = img[:, :, ::-1]
-        img = cv2.resize(img, (64, 64))
-        imgs_male_neutral.append(img)
-
-
-    z_base_male_neutral = sum(z_base_male_neutral)/3
-
-    images_male_neutral = []
-    names = []
-    images_male_neutral.append(run_z(graph, z_base_male_neutral))
-    names.append("male_neutral_avg")
-    
-    save_images(images_male_neutral, names)
-
-    # Neutral Woman
-
-    base_indices_neutral_female = get_base_indices("[]~['Smiling', 'Male']")
-
-
-    indices_here_neutral_female = get_n_indices(base_indices_neutral_female, 3)
+        indices_here_smiling_female = get_n_indices(base_indices_smiling_female, 3)
 
 
 
-    z_base_female_neutral = []
-    imgs_female_neutral = []
-    for index in tqdm(indices_here_neutral_female):
-        z_base_female_neutral.append(graph.generate_z(dataset[index]["x"]))
-        img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
-        img = img[:, :, ::-1]
-        img = cv2.resize(img, (64, 64))
-        imgs_female_neutral.append(img)
+        z_base_female_smiling = []
+        imgs_female_smiling = []
+        for index in indices_here_smiling_female:
+            z_base_female_smiling.append(graph.generate_z(dataset[index]["x"]))
+            img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
+            img = img[:, :, ::-1]
+            img = cv2.resize(img, (64, 64))
+            imgs_female_smiling.append(img)
 
 
-    z_base_female_neutral = sum(z_base_female_neutral)/3
+        z_base_female_smiling = sum(z_base_female_smiling)/3
 
-    images_female_neutral = []
-    names = []
-    images_female_neutral.append(run_z(graph, z_base_female_neutral))
-    names.append("female_neutral_avg")
-    
-    save_images(images_female_neutral, names)
+        images_female_smiling = []
+        names = []
+        images_female_smiling.append(run_z(graph, z_base_female_smiling))
+        os.system("mkdir -p pictures/smile/"+str(gen))
+        names.append(str(gen)+"/female_smiling_avg")
+        
+        save_images(images_female_smiling, names)
 
-    # Generate smiling man
-    z_base_male_smiling_gen = z_base_female_smiling - z_base_female_neutral + z_base_male_neutral
+        # Neutral Man
 
-    images_male_smiling_gen = []
-    names = []
-    images_male_smiling_gen.append(run_z(graph, z_base_male_smiling_gen))
-    names.append("male_smiling_gen")
-    
-    save_images(images_male_smiling_gen, names)
+        base_indices_neutral_male = get_base_indices("['Male']~['Smiling']")
+
+
+        indices_here_neutral_male = get_n_indices(base_indices_neutral_male, 3)
+
+
+
+        z_base_male_neutral = []
+        imgs_male_neutral = []
+        for index in indices_here_neutral_male:
+            z_base_male_neutral.append(graph.generate_z(dataset[index]["x"]))
+            img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
+            img = img[:, :, ::-1]
+            img = cv2.resize(img, (64, 64))
+            imgs_male_neutral.append(img)
+
+
+        z_base_male_neutral = sum(z_base_male_neutral)/3
+
+        images_male_neutral = []
+        names = []
+        images_male_neutral.append(run_z(graph, z_base_male_neutral))
+        os.system("mkdir -p pictures/smile/"+str(gen))
+        names.append(str(gen)+"/male_neutral_avg")
+        
+        save_images(images_male_neutral, names)
+
+        # Neutral Woman
+
+        base_indices_neutral_female = get_base_indices("[]~['Smiling', 'Male']")
+
+
+        indices_here_neutral_female = get_n_indices(base_indices_neutral_female, 3)
+
+
+
+        z_base_female_neutral = []
+        imgs_female_neutral = []
+        for index in indices_here_neutral_female:
+            z_base_female_neutral.append(graph.generate_z(dataset[index]["x"]))
+            img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
+            img = img[:, :, ::-1]
+            img = cv2.resize(img, (64, 64))
+            imgs_female_neutral.append(img)
+
+
+        z_base_female_neutral = sum(z_base_female_neutral)/3
+
+        images_female_neutral = []
+        names = []
+        images_female_neutral.append(run_z(graph, z_base_female_neutral))
+        os.system("mkdir -p pictures/smile/"+str(gen))
+        names.append(str(gen)+"/female_neutral_avg")
+        
+        save_images(images_female_neutral, names)
+
+        # Generate smiling man
+        z_base_male_smiling_gen = z_base_female_smiling - z_base_female_neutral + z_base_male_neutral
+
+        images_male_smiling_gen = []
+        names = []
+        images_male_smiling_gen.append(run_z(graph, z_base_male_smiling_gen))
+        os.system("mkdir -p pictures/smile/"+str(gen))
+        names.append(str(gen)+"/male_smiling_gen")
+        
+        save_images(images_male_smiling_gen, names)

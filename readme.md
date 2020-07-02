@@ -2,6 +2,8 @@
 This is pytorch implementation of paper "Glow: Generative Flow with Invertible 1x1 Convolutions". Most modules are adapted from the offical TensorFlow version [openai/glow](https://github.com/openai/glow).
 
 # Added features in this fork
+
+## Extractor
 Get pictures with specific attributes with `extractor.py`.  
 ### Usage
 
@@ -15,6 +17,10 @@ python3 extractor.py <hparams> <dataset_root> <Attrs> <NoAttrs>
 python3 extractor.py hparams/celeba.json img_align_celeba/ "Male Smiling" ""
 python3 extractor.py hparams/celeba.json img_align_celeba/ "Male" "Smiling"
 ```
+
+## Average and custom generator
+
+Run `python3 z_dist_smile.py hparams/celeba.json img_align_celeba/ celeba_z/` to generate ten instances of smiling women, neutral women, neutral men and smiling men using average of three latent vectors of each. Moreover, it would also generate images of ten smiling men using simple vector algebra in latent space.  
 
 # TODO
 - [x] Glow model. The model is coded as described in original paper, some functions are adapted from offical TF version. Most modules are tested.
