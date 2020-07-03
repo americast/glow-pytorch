@@ -20,7 +20,7 @@ python3 extractor.py hparams/celeba.json img_align_celeba/ "Male" "Smiling"
 
 ## Average and custom generator
 
-Run `python3 z_dist_smile.py hparams/celeba.json img_align_celeba/ celeba_z/` to generate ten instances of smiling women, neutral women, neutral men and smiling men using average of three latent vectors of each. Moreover, it would also generate images of ten smiling men using simple vector algebra in latent space.  
+Run `python3 z_dist_smile.py hparams/celeba.json img_align_celeba/ celeba_z/` to generate ten instances of smiling women, neutral women, neutral men and smiling men using average of three latent vectors of each. Moreover, it would also generate images of ten smiling men using simple vector algebra in latent space. The KL divergence would also be calculated. The average and generated distributions are saved in `<z_dir>/smile_avg_dist` and `<z_dir>/smile_gen_dist`.  
 
 # TODO
 - [x] Glow model. The model is coded as described in original paper, some functions are adapted from offical TF version. Most modules are tested.

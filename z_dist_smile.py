@@ -17,6 +17,8 @@ from glow.utils import load
 from tqdm import tqdm
 import pudb
 from random import random
+import pickle
+import torch.nn.functional as F
 
 def save_images(images, names):
     if not os.path.exists("pictures/infer/"):
@@ -54,6 +56,18 @@ def get_n_indices(base_indices, n):
             num = int(random() * len(base_indices))
         indices_here.append(base_indices[num])
     return indices_here
+
+def KL(P,Q):
+     """ Epsilon is used here to avoid conditional code for
+     checking that neither P nor Q is equal to 0. """
+     epsilon = 0.00001
+
+     # You may want to instead make copies to avoid changing the np arrays.
+     # P = P+epsilon
+     # Q = Q+epsilon
+
+     divergence = np.sum(P*np.log(P/Q))
+     return divergence
 
 if __name__ == "__main__":
     args = docopt(__doc__)
@@ -105,6 +119,8 @@ if __name__ == "__main__":
         print("Finish generating")
 
 
+    smile_avg_dist = []
+    smile_gen_dist = []
     for gen in tqdm(range(10)):
         # Smiling Man
 
@@ -128,6 +144,7 @@ if __name__ == "__main__":
 
         z_base_male_smiling = sum(z_base_male_smiling)/3
 
+        smile_avg_dist.append(z_base_male_smiling)
         images_male_smiling = []
         names = []
         images_male_smiling.append(run_z(graph, z_base_male_smiling))
@@ -234,3 +251,20 @@ if __name__ == "__main__":
         names.append(str(gen)+"/male_smiling_gen")
         
         save_images(images_male_smiling_gen, names)
+
+        smile_gen_dist.append(z_base_male_smiling_gen)
+
+    f = open(z_dir+"/smile_avg_dist", "wb")
+    pickle.dump(smile_avg_dist, f)
+    f.close()
+
+    f = open(z_dir+"/smile_gen_dist", "wb")
+    pickle.dump(smile_gen_dist, f)
+    f.close()
+
+    a = np.array(smile_avg_dist)
+    b = np.array(smile_gen_dist)
+    a = torch.tensor(a)
+    b = torch.tensor(b)
+    out = F.kl_div(a, b)
+    print("KL divergence: "+str(out))
