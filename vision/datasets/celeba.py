@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
+import pudb
 
 
 IMAGE_EXTENSTOINS = [".png", ".jpg", ".jpeg", ".bmp"]
@@ -45,6 +46,7 @@ def _find_images_and_annotation(root_dir):
                 line = line.split(" ")
                 fname = os.path.splitext(line[0])[0]
                 onehot = [int(int(d) > 0) for d in line[1:]]
+                # pu.db
                 assert len(onehot) == len(attrs), "{} only has {} attrs < {}".format(
                     fname, len(onehot), len(attrs))
                 final.append({

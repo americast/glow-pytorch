@@ -9,12 +9,12 @@ import matplotlib.pyplot as plt
 TRANSFER = 25
 TOTAL = 300
 
-pos = ['Smiling']
-neg = ['Male']
+pos = []
+neg = ['Smiling','Male']
 
 gen = True
 
-# file_str = str(pos)+"~"+str(neg)
+file_str = str(pos)+"~"+str(neg)
 
 # f = open("pic_list/"+str(file_str), "r")
 # pics = []
