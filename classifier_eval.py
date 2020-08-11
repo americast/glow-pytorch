@@ -26,6 +26,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
+from sklearn.metrics import classification_report
 
 def save_images(images, names):
     if not os.path.exists("pictures/infer/"):
@@ -88,9 +89,11 @@ class classifier_data(Dataset):
                 on a sample.
         """
         self.transform = transform
-        self.idx = range(1, int(0.7*len(male_smiling)) + 1)
+        self.val = val
+        cut_len = int(0.7*len(male_smiling))
+        self.idx = range(1, cut_len + 1)
         if val:
-            self.idx = len(male_smiling) - self.idx
+            self.idx = range(1, len(male_smiling) - len(self.idx) + 1)
 
         self.idx_all = []
 
@@ -100,7 +103,10 @@ class classifier_data(Dataset):
             self.idx_all.append((i, 2))
             self.idx_all.append((i, 3))
 
-        self.male_neutral, self.female_neutral, self.male_smiling, self.female_smiling = male_neutral, female_neutral, male_smiling, female_smiling
+        if self.val:
+            self.male_neutral, self.female_neutral, self.male_smiling, self.female_smiling = male_neutral[cut_len:], female_neutral[cut_len:], male_smiling[cut_len:], female_smiling[cut_len:]
+        else:
+            self.male_neutral, self.female_neutral, self.male_smiling, self.female_smiling = male_neutral[:cut_len], female_neutral[:cut_len], male_smiling[:cut_len], female_smiling[:cut_len]
 
 
     def __len__(self):
@@ -110,6 +116,7 @@ class classifier_data(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
+        print("idx: "+str(idx)+"\n.\n")
 
         n, r = self.idx_all[idx]
 
@@ -176,7 +183,7 @@ class enc_classifier(nn.Module):
 
 if __name__ == "__main__":
 
-    EPOCHS = 100    
+    EPOCHS = 1
     LR = 1e-5
 
     f = open("pic_list/['Male']~['Smiling']", "r")
@@ -212,48 +219,47 @@ if __name__ == "__main__":
         transforms.Resize(hparams.Data.resize),
         transforms.ToTensor()])
 
-    transformed_dataset = classifier_data(male_neutral, female_neutral, male_smiling, female_smiling, transform=transform)
+    transformed_dataset = classifier_data(male_neutral, female_neutral, male_smiling, female_smiling, val=True, transform=transform)
 
-    dataloader = DataLoader(transformed_dataset, batch_size=1, shuffle=True, num_workers=16)
+    dataloader = DataLoader(transformed_dataset, batch_size=1, shuffle=True, num_workers=0)
 
     model = enc_classifier().cuda()
+    # model = enc_classifier()
+    model.load_state_dict(torch.load("./classifier_model.pt"))
+    print("Model loaded!")
+    model.eval()
     loss = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
     for E in tqdm(range(EPOCHS)):
         print("\n")
         losses = []
+        y_true = []
+        y_pred = []
         c = 0
+        # try:
         for data, n, r in dataloader:
+            y_true.append(r[0])
             data, n, r = data.to("cuda"), n.to("cuda"), r.to("cuda")
+            # data, n, r = data, n, r
             c+=1
-            _, y = model(data, n)
+            with torch.no_grad():
+                _, y = model(data, n)
+            y_pred.append(np.argmax(y.detach().cpu().numpy()))
             out = loss(y, r)
             # pu.db
-            print(str(c)+"/2800; "+"r: "+str(r)+"; loss: "+str(out)+"      ", end="\r")
-            optimizer.zero_grad()
-
-            out.backward()
-
-            optimizer.step()
+            print(str(c)+"/"+str(len(transformed_dataset))+"; "+"r: "+str(r)+"; loss: "+str(out)+"      ", end="\n")
+            
 
             losses.append(out)
+        # except:
+        #     pu.db
 
         print()
         loss_here = sum(losses)/len(losses)
         print("Avg loss in epoch "+str(E)+": "+str(loss_here))
-        if E == 0:
-            avg_loss = loss_here
-
-        if loss_here <= avg_loss:
-            avg_loss = loss_here
-            torch.save(model.state_dict(), "./classifier_model.pt")
-            f = open("classifier_model_details", "w")
-            f.write("loss: "+str(loss_here)+"\nEpoch: "+str(E)+"\n")
-            print("Model saved!")
-
-
-
+        print(classification_report(y_true, y_pred))
+        pu.db
+        
 
 
     """
