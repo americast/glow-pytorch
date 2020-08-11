@@ -135,6 +135,7 @@ if __name__ == "__main__":
         z_base_male_smiling = []
         imgs_male_smiling = []
         for index in indices_here_smiling_male:
+            pu.db
             z_base_male_smiling.append(graph.generate_z(dataset[index]["x"]))
             img = dataset[index]["x"].permute(1, 2, 0).detach().cpu().numpy()
             img = img[:, :, ::-1]
