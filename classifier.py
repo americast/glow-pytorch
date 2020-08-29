@@ -232,7 +232,7 @@ if __name__ == "__main__":
             _, y = model(data, n)
             out = loss(y, r)
             # pu.db
-            print(str(c)+"/2800; "+"r: "+str(r)+"; loss: "+str(out)+"      ", end="\r")
+            print(str(c)+"/"+str(len(transformed_dataset))+"; "+"r: "+str(r)+"; loss: "+str(out)+"      ", end="\r")
             optimizer.zero_grad()
 
             out.backward()
