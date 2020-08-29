@@ -18,6 +18,7 @@ from tqdm import tqdm
 import pudb
 from random import random
 import pickle
+import torch.nn.functional as F
 from PIL import Image
 from torch import optim
 from torch import nn
@@ -25,8 +26,9 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
-
+from sklearn.metrics import classification_report
 from classifier_utils import *
+
 
 def save_images(images, names):
     if not os.path.exists("pictures/infer/"):
@@ -77,104 +79,9 @@ def KL(P,Q):
      divergence = np.sum(P*np.log(P/Q))
      return divergence
 
-class classifier_data(Dataset):
-    """Face Landmarks dataset."""
-
-    def __init__(self, male_neutral, female_neutral, male_smiling, female_smiling, transform=None, val=False):
-        """
-        Args:
-            csv_file (string): Path to the csv file with annotations.
-            root_dir (string): Directory with all the images.
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
-        self.transform = transform
-        self.idx = range(1, int(0.7*len(male_smiling)) + 1)
-        if val:
-            self.idx = len(male_smiling) - self.idx
-
-        self.idx_all = []
-
-        for i in self.idx:
-            self.idx_all.append((i, 0))
-            self.idx_all.append((i, 1))
-            self.idx_all.append((i, 2))
-            self.idx_all.append((i, 3))
-
-        self.male_neutral, self.female_neutral, self.male_smiling, self.female_smiling = male_neutral, female_neutral, male_smiling, female_smiling
-
-
-    def __len__(self):
-        return len(self.idx_all)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-
-        n, r = self.idx_all[idx]
-
-        all_here = self.male_neutral[:n], self.female_neutral[:n], self.male_smiling[:n], self.female_smiling[:n]
-
-        imgs_all = torch.zeros(int(len(self.idx_all) / 4), 3, 64, 64)
-        for i, each in enumerate(all_here[r]):
-
-
-  
-
-
-class enc_classifier(nn.Module):
-   def __init__(self):
-      super().__init__()
-      self.conv = nn.Conv2d(3, 16, 3)
-      # self.resnet = resnet50(num_classes=768)
-      self.fc_0 = nn.Linear(61504, 2048)
-      self.fc_1 = nn.Linear(2048, 2048)
-      self.fc_2 = nn.Linear(2048, 4)
-
-
-   def forward(self, data, n, feat_in = None):
-      data = data.squeeze(0)[:n,:,:,:]
-      x = self.conv(data)
-      x = F.dropout(x)
-      x = x.flatten(start_dim = 1)
-      x = F.relu(x)
-      x = self.fc_0(x)
-      x = F.dropout(x)
-      x = F.relu(x)
-      try:
-        x = x.max(dim = 0)[0]
-      except:
-        pu.db
-      x = F.relu(x)
-      
-      feat_org = self.fc_1(x)
-      feat = F.relu(feat_org)
-      
-      final = self.fc_2(feat)
-      final = F.softmax(final)
-      
-      return feat.reshape(1, -1), final.reshape(1, -1)
-
-      # if feat_in == None:
-      #       # _, x1 = self.resnet(data[0])
-      #       # _, x2 = self.resnet(data[1])
-      #       x1, x2 = x1.squeeze(), x2.squeeze()
-      # else:
-      #       x1 = feat_in[0]
-      #       x2 = feat_in[1]
-
-      # merged = torch.cat([x1, x2], dim = -1)
-      # x = F.relu(merged)
-      # y1 = F.relu(self.fc_1(x))
-      # y = F.softmax(self.fc_2(y1))
-
-
-      return 0
-
 if __name__ == "__main__":
 
-    EPOCHS = 100    
+    EPOCHS = 1
     LR = 1e-5
 
     f = open("pic_list/['Male']~['Smiling']", "r")
@@ -201,13 +108,7 @@ if __name__ == "__main__":
         female_neutral.append(line.strip())
     f.close()
 
-    f = open("pic_list/['Smiling', 'Male']~[]", "r")
-    male_smiling = []
-    while True:
-        line = f.readline()
-        if not line: break
-        male_smiling.append(line.strip())
-    f.close()
+    male_smiling = ["pictures/smile_1000/male_smiling_"+str(x)+".png" for x in range(1000)]
 
     hparams = JsonConfig("hparams/celeba.json")
     # set transform of dataset
@@ -216,66 +117,47 @@ if __name__ == "__main__":
         transforms.Resize(hparams.Data.resize),
         transforms.ToTensor()])
 
-    transformed_dataset = classifier_data(male_neutral, female_neutral, male_smiling, female_smiling, transform=transform, cut_len=1000)
+    transformed_dataset = classifier_data(male_neutral, female_neutral, male_smiling, female_smiling, val=True, transform=transform)
 
-    dataloader = DataLoader(transformed_dataset, batch_size=1, shuffle=True, num_workers=32)
+    dataloader = DataLoader(transformed_dataset, batch_size=1, shuffle=True, num_workers=0)
 
     model = enc_classifier().cuda()
+    # model = enc_classifier()
+    model.load_state_dict(torch.load("./classifier_model.pt"))
+    print("Model loaded!")
+    model.eval()
     loss = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
     for E in tqdm(range(EPOCHS)):
         print("\n")
         losses = []
+        y_true = []
+        y_pred = []
         c = 0
+        # try:
         for data, n, r in dataloader:
+            y_true.append(r[0])
             data, n, r = data.to("cuda"), n.to("cuda"), r.to("cuda")
+            # data, n, r = data, n, r
             c+=1
-            _, y = model(data, n)
+            with torch.no_grad():
+                _, y = model(data, n)
+            y_pred.append(np.argmax(y.detach().cpu().numpy()))
             out = loss(y, r)
             # pu.db
-            print(str(c)+"/"+str(len(transformed_dataset))+"; "+"r: "+str(r)+"; loss: "+str(out)+"      ", end="\r")
-            optimizer.zero_grad()
-
-    dataloader = DataLoader(transformed_dataset, batch_size=1, shuffle=True, num_workers=16)
-
-    model = enc_classifier()
-    loss = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-
-    for E in tqdm(range(EPOCHS)):
-        print("\n")
-        losses = []
-        c = 0
-        for data, n, r in dataloader:
-            c+=1
-            _, y = model(data, n)
-            out = loss(y, r)
-            # pu.db
-            print(str(c)+"/"+str(len(transformed_dataset))+"; "+"r: "+str(r)+"; loss: "+str(out)+"      ", end="\r")
-            optimizer.zero_grad()
-
-            out.backward()
-
-            optimizer.step()
+            print(str(c)+"/"+str(len(transformed_dataset))+"; "+"r: "+str(r)+"; loss: "+str(out)+"      ", end="\n")
+            
 
             losses.append(out)
+        # except:
+        #     pu.db
 
         print()
         loss_here = sum(losses)/len(losses)
         print("Avg loss in epoch "+str(E)+": "+str(loss_here))
-        if E == 0:
-            avg_loss = loss_here
-
-        if loss_here <= avg_loss:
-            avg_loss = loss_here
-            torch.save(model.state_dict(), "./classifier_model.pt")
-            f = open("classifier_model_details", "w")
-            f.write("loss: "+str(loss_here)+"\nEpoch: "+str(E)+"\n")
-            print("Model saved!")
-
-
-
+        print(classification_report(y_true, y_pred))
+        pu.db
+        
 
 
     """
@@ -349,3 +231,4 @@ if __name__ == "__main__":
     
     save_images(images_male_smiling, names)
     """
+
