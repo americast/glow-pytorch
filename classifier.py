@@ -77,8 +77,100 @@ def KL(P,Q):
      divergence = np.sum(P*np.log(P/Q))
      return divergence
 
+class classifier_data(Dataset):
+    """Face Landmarks dataset."""
+
+    def __init__(self, male_neutral, female_neutral, male_smiling, female_smiling, transform=None, val=False):
+        """
+        Args:
+            csv_file (string): Path to the csv file with annotations.
+            root_dir (string): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        self.transform = transform
+        self.idx = range(1, int(0.7*len(male_smiling)) + 1)
+        if val:
+            self.idx = len(male_smiling) - self.idx
+
+        self.idx_all = []
+
+        for i in self.idx:
+            self.idx_all.append((i, 0))
+            self.idx_all.append((i, 1))
+            self.idx_all.append((i, 2))
+            self.idx_all.append((i, 3))
+
+        self.male_neutral, self.female_neutral, self.male_smiling, self.female_smiling = male_neutral, female_neutral, male_smiling, female_smiling
+
+
+    def __len__(self):
+        return len(self.idx_all)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+
+        n, r = self.idx_all[idx]
+
+        all_here = self.male_neutral[:n], self.female_neutral[:n], self.male_smiling[:n], self.female_smiling[:n]
+
+        imgs_all = torch.zeros(int(len(self.idx_all) / 4), 3, 64, 64)
+        for i, each in enumerate(all_here[r]):
+
 
   
+
+
+class enc_classifier(nn.Module):
+   def __init__(self):
+      super().__init__()
+      self.conv = nn.Conv2d(3, 16, 3)
+      # self.resnet = resnet50(num_classes=768)
+      self.fc_0 = nn.Linear(61504, 2048)
+      self.fc_1 = nn.Linear(2048, 2048)
+      self.fc_2 = nn.Linear(2048, 4)
+
+
+   def forward(self, data, n, feat_in = None):
+      data = data.squeeze(0)[:n,:,:,:]
+      x = self.conv(data)
+      x = F.dropout(x)
+      x = x.flatten(start_dim = 1)
+      x = F.relu(x)
+      x = self.fc_0(x)
+      x = F.dropout(x)
+      x = F.relu(x)
+      try:
+        x = x.max(dim = 0)[0]
+      except:
+        pu.db
+      x = F.relu(x)
+      
+      feat_org = self.fc_1(x)
+      feat = F.relu(feat_org)
+      
+      final = self.fc_2(feat)
+      final = F.softmax(final)
+      
+      return feat.reshape(1, -1), final.reshape(1, -1)
+
+      # if feat_in == None:
+      #       # _, x1 = self.resnet(data[0])
+      #       # _, x2 = self.resnet(data[1])
+      #       x1, x2 = x1.squeeze(), x2.squeeze()
+      # else:
+      #       x1 = feat_in[0]
+      #       x2 = feat_in[1]
+
+      # merged = torch.cat([x1, x2], dim = -1)
+      # x = F.relu(merged)
+      # y1 = F.relu(self.fc_1(x))
+      # y = F.softmax(self.fc_2(y1))
+
+
+      return 0
 
 if __name__ == "__main__":
 
@@ -139,6 +231,24 @@ if __name__ == "__main__":
         c = 0
         for data, n, r in dataloader:
             data, n, r = data.to("cuda"), n.to("cuda"), r.to("cuda")
+            c+=1
+            _, y = model(data, n)
+            out = loss(y, r)
+            # pu.db
+            print(str(c)+"/"+str(len(transformed_dataset))+"; "+"r: "+str(r)+"; loss: "+str(out)+"      ", end="\r")
+            optimizer.zero_grad()
+
+    dataloader = DataLoader(transformed_dataset, batch_size=1, shuffle=True, num_workers=16)
+
+    model = enc_classifier()
+    loss = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+
+    for E in tqdm(range(EPOCHS)):
+        print("\n")
+        losses = []
+        c = 0
+        for data, n, r in dataloader:
             c+=1
             _, y = model(data, n)
             out = loss(y, r)
@@ -240,4 +350,3 @@ if __name__ == "__main__":
     
     save_images(images_male_smiling, names)
     """
-
