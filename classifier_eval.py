@@ -117,7 +117,7 @@ if __name__ == "__main__":
         transforms.Resize(hparams.Data.resize),
         transforms.ToTensor()])
 
-    transformed_dataset = classifier_data(male_neutral, female_neutral, male_smiling, female_smiling, val=True, transform=transform)
+    transformed_dataset = classifier_data(male_neutral, female_neutral, male_smiling, female_smiling, val=True, transform=transform, cut_len=600)
 
     dataloader = DataLoader(transformed_dataset, batch_size=1, shuffle=True, num_workers=0)
 

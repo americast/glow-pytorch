@@ -109,8 +109,9 @@ if __name__ == "__main__":
         female_neutral.append(line.strip())
     f.close()
 
+    male_smiling = ["pictures/smile_1000/male_smiling_"+str(x)+".png" for x in range(400, 1000)]
+
     f = open("pic_list/['Smiling', 'Male']~[]", "r")
-    male_smiling = []
     while True:
         line = f.readline()
         if not line: break

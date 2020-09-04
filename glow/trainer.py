@@ -76,6 +76,7 @@ class Trainer(object):
         self.graph.train()
         self.global_step = self.loaded_step
         # begin to train
+        print("Total num of epochs: "+str(self.n_epoches))
         for epoch in range(self.n_epoches):
             print("epoch", epoch)
             progress = tqdm(self.data_loader)
