@@ -1,0 +1,6 @@
+[submodule "Inception-Score"]
+	path = Inception-Score
+	url = https://github.com/tsc2017/Inception-Score.git
+[submodule "inception-score-pytorch"]
+	path = inception-score-pytorch
+	url = https://github.com/sbarratt/inception-score-pytorch.git
